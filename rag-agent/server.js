@@ -5,24 +5,23 @@ const cors = require("cors");
 const OpenAI = require("openai");
 
 const app = express();
-
 const PORT = process.env.PORT || 3000;
 
-// OpenAI client
+// xAI / Grok client
 const client = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
+    apiKey: process.env.XAI_API_KEY,
+    baseURL: "https://api.x.ai/v1"
 });
 
-// Middleware
 app.use(cors());
 app.use(express.json());
 
-// Serve your HTML, CSS, JS and image.png
+// Serve your website
 app.use(express.static(__dirname));
 
 
 // ================================
-// AI CHAT API
+// RAG AGENT CHAT
 // ================================
 
 app.post("/api/chat", async (req, res) => {
@@ -38,16 +37,19 @@ app.post("/api/chat", async (req, res) => {
         }
 
 
-        // Creator response
-        const creatorQuestion = question.toLowerCase();
+        // ==========================
+        // CREATOR
+        // ==========================
+
+        const q = question.toLowerCase();
 
         if (
-            creatorQuestion.includes("who built you") ||
-            creatorQuestion.includes("who created you") ||
-            creatorQuestion.includes("who made you") ||
-            creatorQuestion.includes("your creator") ||
-            creatorQuestion.includes("who is your developer") ||
-            creatorQuestion.includes("who developed you")
+            q.includes("who built you") ||
+            q.includes("who created you") ||
+            q.includes("who made you") ||
+            q.includes("your creator") ||
+            q.includes("who is your developer") ||
+            q.includes("who developed you")
         ) {
 
             return res.json({
@@ -58,19 +60,25 @@ app.post("/api/chat", async (req, res) => {
         }
 
 
-        // Ask the AI
+        // ==========================
+        // GROK
+        // ==========================
+
         const response = await client.responses.create({
 
-            model: "gpt-5-mini",
+            model: "grok-4.6",
 
-            instructions: `
-You are RAG Agent 🐭, a friendly personal study assistant.
+            input: [
+                {
+                    role: "system",
+                    content: `
+You are RAG Agent 🐭, a friendly AI study assistant.
 
 Your creator is Ahmed bin Shifa.
 
-Your job is to help students learn.
+Your main purpose is helping students learn.
 
-You can explain:
+You can help with:
 - HTML
 - CSS
 - JavaScript
@@ -80,24 +88,33 @@ You can explain:
 - Basic educational medical topics
 - Basic educational finance topics
 
-For medical questions, provide educational information only
-and clearly recommend a qualified healthcare professional for
-personal medical decisions.
+Explain difficult concepts simply.
 
-For financial questions, provide educational explanations,
-not personalized financial advice.
+Show mathematical calculations step-by-step.
 
-Explain difficult subjects simply and give examples when useful.
+For medical questions:
+Give educational information only.
+Do not diagnose users or replace a doctor.
+
+For financial questions:
+Give educational information only.
+Do not present personalized financial advice as professional advice.
 
 Be friendly, encouraging and concise.
-`,
 
-            input: question
+If the user asks who created or built you,
+say that you were built by Ahmed bin Shifa.
+                    `
+                },
+                {
+                    role: "user",
+                    content: question
+                }
+            ]
         });
 
 
         const answer = response.output_text;
-
 
         res.json({
             answer: answer
@@ -106,10 +123,10 @@ Be friendly, encouraging and concise.
 
     } catch (error) {
 
-        console.error("AI Error:", error);
+        console.error("Grok Error:", error);
 
         res.status(500).json({
-            error: "RAG Agent could not connect to the AI."
+            error: "RAG Agent could not connect to Grok."
         });
     }
 });
@@ -124,7 +141,7 @@ app.listen(PORT, () => {
     console.log(`
 🐭 RAG Agent is running!
 
-Local website:
+Website:
 http://localhost:${PORT}
 
 API:
