@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>RAG Agent - Study Assistant</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #050505;
+            color: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: #0d0d0d;
+            border-bottom: 1px solid #242424;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #00e5ff;
+            background: #111;
+        }
+
+        .brand h1 {
+            font-size: 22px;
+            color: #00e5ff;
+        }
+
+        .brand span {
+            display: block;
+            color: #888;
+            font-size: 12px;
+            margin-top: 3px;
+        }
+
+        /* Main layout */
+        .main {
+            max-width: 1200px;
+            margin: auto;
+            padding: 30px 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 35px 20px;
+        }
+
+        .hero h2 {
+            font-size: 38px;
+            margin-bottom: 10px;
+        }
+
+        .hero h2 span {
+            color: #00e5ff;
+        }
+
+        .hero p {
+            color: #aaa;
+            max-width: 700px;
+            margin: auto;
+            line-height: 1.6;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: #101010;
+            border: 1px solid #242424;
+            border-radius: 14px;
+            padding: 22px;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+        }
+
+        .card h3 {
+            margin-bottom: 15px;
+            color: #00e5ff;
+        }
+
+        /* AI Chat */
+        .chat-box {
+            height: 380px;
+            background: #080808;
+            border: 1px solid #222;
+            border-radius: 10px;
+            padding: 15px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            max-width: 85%;
+            line-height: 1.5;
+        }
+
+        .ai {
+            background: #151515;
+            border-left: 3px solid #00e5ff;
+        }
+
+        .user {
+            background: #003b43;
+            margin-left: auto;
+            border-right: 3px solid #00e5ff;
+        }
+
+        .chat-input {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input input {
+            flex: 1;
+            padding: 13px;
+            background: #080808;
+            border: 1px solid #333;
+            color: white;
+            border-radius: 8px;
+            outline: none;
+        }
+
+        button {
+            border: none;
+            padding: 12px 18px;
+            background: #00e5ff;
+            color: #001014;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #00b8cc;
+            transform: translateY(-1px);
+        }
+
+        /* Study topics */
+        .topics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .topic {
+            padding: 14px;
+            background: #171717;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #292929;
+            transition: 0.2s;
+        }
+
+        .topic:hover {
+            border-color: #00e5ff;
+            color: #00e5ff;
+        }
+
+        /* Timer */
+        .timer {
+            text-align: center;
+            padding: 15px;
+        }
+
+        .timer-display {
+            font-size: 42px;
+            font-weight: bold;
+            color: #00e5ff;
+            margin: 15px 0;
+        }
+
+        .timer p {
+            color: #888;
+            font-size: 13px;
+        }
+
+        /* Progress */
+        .progress-container {
+            background: #222;
+            height: 10px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+
+        .progress {
+            height: 100%;
+            width: 0%;
+            background: #00e5ff;
+            transition: width 0.3s;
+        }
+
+        /* Document upload */
+        .upload-area {
+            border: 2px dashed #333;
+            border-radius: 10px;
+            padding: 25px;
+            text-align: center;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .upload-area:hover {
+            border-color: #00e5ff;
+            color: #00e5ff;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        #fileList {
+            margin-top: 12px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        /* Quick question */
+        .question-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .question-buttons button {
+            background: #191919;
+            color: #ddd;
+            border: 1px solid #303030;
+            text-align: left;
+        }
+
+        .question-buttons button:hover {
+            color: #00e5ff;
+            border-color: #00e5ff;
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            border-top: 1px solid #1d1d1d;
+            margin-top: 30px;
+        }
+
+        /* Responsive */
+        @media (max-width: 800px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h2 {
+                font-size: 28px;
+            }
+
+            header {
+                padding: 12px 15px;
+            }
+
+            .topics {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <div class="brand">
+        <!-- Put image.png in the same folder as this HTML file -->
+        <img src="image.png" alt="RAG Agent Logo" class="logo">
+
+        <div>
+            <h1>RAG Agent 🐭</h1>
+            <span>Your personal study mouse</span>
+        </div>
+    </div>
+
+    <button onclick="resetStudyTime()">Reset Session</button>
+</header>
+
+
+<main class="main">
+
+    <section class="hero">
+        <h2>Welcome to <span>RAG Agent</span> 🐭</h2>
+
+        <p>
+            Your personal AI study assistant. Ask me about programming,
+            science, mathematics, basic medical topics, finance and more.
+            Upload your study documents and use them as your knowledge base.
+        </p>
+    </section>
+
+
+    <section class="dashboard">
+
+        <!-- AI CHAT -->
+        <div class="card">
+
+            <h3>🤖 Ask RAG Agent</h3>
+
+            <div class="chat-box" id="chatBox">
+
+                <div class="message ai">
+                    🐭 <strong>RAG Agent:</strong>
+                    Hello! I'm your study mouse. Ask me anything about your
+                    studies. I can also help with basic medical concepts,
+                    finance and mathematics.
+                </div>
+
+                <div class="message ai">
+                    Try asking:
+                    <br>
+                    "Explain photosynthesis."
+                    <br>
+                    "What is compound interest?"
+                    <br>
+                    "Solve 25 × 14."
+                </div>
+
+            </div>
+
+            <div class="chat-input">
+
+                <input
+                    type="text"
+                    id="questionInput"
+                    placeholder="Ask a study question..."
+                    onkeydown="handleEnter(event)"
+                >
+
+                <button onclick="askAgent()">Ask</button>
+
+            </div>
+
+        </div>
+
+
+        <!-- SIDE PANEL -->
+        <div>
+
+            <!-- STUDY TIMER -->
+            <div class="card timer">
+
+                <h3>⏱️ Study Limit</h3>
+
+                <div class="timer-display" id="timer">
+                    03:00:00
+                </div>
+
+                <p>
+                    Maximum study session: 3 hours
+                </p>
+
+                <div class="progress-container">
+                    <div class="progress" id="progress"></div>
+                </div>
+
+                <button onclick="startTimer()" id="timerButton">
+                    Start Studying
+                </button>
+
+            </div>
+
+
+            <br>
+
+
+            <!-- TOPICS -->
+            <div class="card">
+
+                <h3>📚 Study Topics</h3>
+
+                <div class="topics">
+
+                    <div class="topic" onclick="quickQuestion('Teach me HTML basics.')">
+                        HTML
+                    </div>
+
+                    <div class="topic" onclick="quickQuestion('Explain CSS.')">
+                        CSS
+                    </div>
+
+                    <div class="topic" onclick="quickQuestion('Give me a mathematics question.')">
+                        Mathematics
+                    </div>
+
+                    <div class="topic" onclick="quickQuestion('Explain basic finance.')">
+                        Finance
+                    </div>
+
+                    <div class="topic" onclick="quickQuestion('Explain a basic medical concept.')">
+                        Medical
+                    </div>
+
+                    <div class="topic" onclick="quickQuestion('Give me a programming question.')">
+                        Programming
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- DOCUMENTS -->
+    <section class="card">
+
+        <h3>📄 Add Study Documents</h3>
+
+        <p style="color:#888; margin-bottom:15px;">
+            Upload your notes, PDFs or other study files to use as your
+            personal knowledge base.
+        </p>
+
+        <label for="fileInput" class="upload-area">
+            📁 Click here to choose documents
+        </label>
+
+        <input
+            type="file"
+            id="fileInput"
+            multiple
+            accept=".pdf,.txt,.doc,.docx"
+            onchange="showFiles()"
+        >
+
+        <div id="fileList">
+            No documents uploaded yet.
+        </div>
+
+    </section>
+
+
+    <br>
+
+
+    <!-- QUICK QUESTIONS -->
+    <section class="card">
+
+        <h3>🧠 Quick Practice</h3>
+
+        <div class="question-buttons">
+
+            <button onclick="quickQuestion('What is 25 × 16?')">
+                ➗ Mathematics: What is 25 × 16?
+            </button>
+
+            <button onclick="quickQuestion('If I invest $1000 at 5% simple interest for 2 years, how much interest will I earn?')">
+                💰 Finance: Calculate simple interest
+            </button>
+
+            <button onclick="quickQuestion('What is the difference between arteries and veins?')">
+                🩺 Medical: Arteries vs veins
+            </button>
+
+            <button onclick="quickQuestion('Explain the difference between HTML, CSS and JavaScript.')">
+                💻 Programming: HTML vs CSS vs JavaScript
+            </button>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<footer>
+    RAG Agent 🐭 — Your personal study assistant
+    <br>
+    <small>For education only. Medical and financial information should not replace professional advice.</small>
+</footer>
+
+
+<script>
+
+    /* ==============================
+       3-HOUR STUDY TIMER
+       ============================== */
+
+    const MAX_TIME = 3 * 60 * 60;
+
+    let remainingTime = MAX_TIME;
+    let timerInterval = null;
+    let timerRunning = false;
+
+
+    function updateTimer() {
+
+        let hours = Math.floor(remainingTime / 3600);
+
+        let minutes = Math.floor((remainingTime % 3600) / 60);
+
+        let seconds = remainingTime % 60;
+
+
+        hours = String(hours).padStart(2, "0");
+        minutes = String(minutes).padStart(2, "0");
+        seconds = String(seconds).padStart(2, "0");
+
+
+        document.getElementById("timer").textContent =
+            `${hours}:${minutes}:${seconds}`;
+
+
+        let used = MAX_TIME - remainingTime;
+
+        let percentage = (used / MAX_TIME) * 100;
+
+        document.getElementById("progress").style.width =
+            percentage + "%";
+
+
+        if (remainingTime <= 0) {
+
+            clearInterval(timerInterval);
+
+            timerRunning = false;
+
+            document.getElementById("timerButton").disabled = true;
+
+            document.getElementById("timerButton").textContent =
+                "3 Hour Limit Reached";
+
+            addMessage(
+                "Your 3-hour study limit has been reached. Great work today! 🐭📚",
+                "ai"
+            );
+        }
+    }
+
+
+    function startTimer() {
+
+        if (timerRunning || remainingTime <= 0) {
+            return;
+        }
+
+        timerRunning = true;
+
+        document.getElementById("timerButton").textContent =
+            "Studying...";
+
+
+        timerInterval = setInterval(() => {
+
+            if (remainingTime > 0) {
+
+                remainingTime--;
+
+                updateTimer();
+
+            }
+
+        }, 1000);
+    }
+
+
+    function resetStudyTime() {
+
+        clearInterval(timerInterval);
+
+        remainingTime = MAX_TIME;
+
+        timerRunning = false;
+
+        document.getElementById("timerButton").disabled = false;
+
+        document.getElementById("timerButton").textContent =
+            "Start Studying";
+
+        updateTimer();
+    }
+
+
+    updateTimer();
+
+
+    /* ==============================
+       AI CHAT DEMO
+       ============================== */
+
+    function handleEnter(event) {
+
+        if (event.key === "Enter") {
+            askAgent();
+        }
+    }
+
+
+    function askAgent() {
+
+        const input = document.getElementById("questionInput");
+
+        const question = input.value.trim();
+
+
+        if (question === "") {
+            return;
+        }
+
+
+        addMessage(question, "user");
+
+        input.value = "";
+
+
+        setTimeout(() => {
+
+            const answer = generateAnswer(question);
+
+            addMessage(answer, "ai");
+
+        }, 500);
+    }
+
+
+    function quickQuestion(question) {
+
+        document.getElementById("questionInput").value =
+            question;
+
+        askAgent();
+    }
+
+
+    function addMessage(text, type) {
+
+        const chatBox = document.getElementById("chatBox");
+
+        const message = document.createElement("div");
+
+        message.className = "message " + type;
+
+        if (type === "ai") {
+
+            message.innerHTML =
+                "🐭 <strong>RAG Agent:</strong> " + text;
+
+        } else {
+
+            message.textContent = text;
+
+        }
+
+        chatBox.appendChild(message);
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+
+    /*
+       This is a simple demo response system.
+
+       To make RAG Agent a REAL AI,
+       replace generateAnswer() with your backend/API.
+    */
+
+    function generateAnswer(question) {
+
+        const q = question.toLowerCase();
+
+
+        /* Mathematics */
+
+        if (
+            q.includes("25 × 16") ||
+            q.includes("25 * 16")
+        ) {
+
+            return "25 × 16 = <strong>400</strong>. 🧮";
+
+        }
+
+
+        /* Finance */
+
+        if (
+            q.includes("simple interest") ||
+            q.includes("interest")
+        ) {
+
+            return `
+                The simple-interest formula is
+                <strong>I = P × R × T</strong>.
+                <br><br>
+                P = principal, R = interest rate,
+                and T = time.
+                <br><br>
+                For financial decisions, always verify calculations
+                and consider fees, taxes and changing rates.
+            `;
+
+        }
+
+
+        /* Medical */
+
+        if (
+            q.includes("arteries") ||
+            q.includes("veins")
+        ) {
+
+            return `
+                Arteries generally carry blood <strong>away</strong>
+                from the heart, while veins generally carry blood
+                <strong>toward</strong> the heart.
+                <br><br>
+                🩺 This is a basic educational explanation, not medical advice.
+            `;
+
+        }
+
+
+        /* HTML */
+
+        if (q.includes("html")) {
+
+            return `
+                HTML stands for <strong>HyperText Markup Language</strong>.
+                It provides the structure of a webpage using elements
+                such as headings, paragraphs, links, images and lists.
+            `;
+
+        }
+
+
+        /* CSS */
+
+        if (q.includes("css")) {
+
+            return `
+                CSS stands for <strong>Cascading Style Sheets</strong>.
+                It controls the appearance of HTML elements, including
+                colors, spacing, fonts, layouts and animations.
+            `;
+
+        }
+
+
+        /* JavaScript */
+
+        if (
+            q.includes("javascript") ||
+            q.includes("js")
+        ) {
+
+            return `
+                JavaScript adds behavior and interactivity to webpages.
+                For example, it can respond to button clicks, update
+                content and communicate with a server.
+            `;
+
+        }
+
+
+        /* Default */
+
+        return `
+            🐭 That's a great study question!
+            <br><br>
+            In this demo version, my knowledge responses are limited.
+            Once you connect this interface to a real RAG/AI backend,
+            I can search your uploaded documents and generate answers
+            based on them.
+        `;
+    }
+
+
+    /* ==============================
+       DOCUMENT UPLOAD
+       ============================== */
+
+    function showFiles() {
+
+        const input = document.getElementById("fileInput");
+
+        const fileList = document.getElementById("fileList");
+
+
+        if (input.files.length === 0) {
+
+            fileList.textContent =
+                "No documents uploaded yet.";
+
+            return;
+        }
+
+
+        fileList.innerHTML = "";
+
+
+        Array.from(input.files).forEach(file => {
+
+            const item = document.createElement("div");
+
+            item.style.padding = "6px 0";
+
+            item.innerHTML =
+                "📄 " + file.name;
+
+            fileList.appendChild(item);
+
+        });
+
+
+        addMessage(
+            `${input.files.length} document(s) added to your study workspace. 📄`,
+            "ai"
+        );
+    }
+
+</script>
+
+</body>
+</html>
+/* Creator */
+
+if (
+    q.includes("who built you") ||
+    q.includes("who created you") ||
+    q.includes("who made you") ||
+    q.includes("your creator") ||
+    q.includes("who is your developer") ||
+    q.includes("who developed you")
+) {
+    return `
+        🐭 I was built by <strong>Ahmed bin Shifa</strong>.
+        <br><br>
+        He created me to be a helpful AI study assistant.
+    `;
+}
+
+
+/* Default */
+
+return `
+    🐭 That's a great study question!
+    <br><br>
+    In this demo version, my knowledge responses are limited.
+    Once you connect this interface to a real RAG/AI backend,
+    I can search your uploaded documents and generate answers
+    based on them.
+`;
+
